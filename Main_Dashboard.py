@@ -753,3 +753,167 @@ with col2:
     st.plotly_chart(bar_fig_median, use_container_width=True)    
 with col3:
     st.plotly_chart(fig_donut_volume, use_container_width=True)
+
+# --- Row 8 ---------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_Depositors_by_Pre_Deposit_Activtry(start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with tab1 as (
+  SELECT 
+    FROM_ADDRESS as user1,
+    MIN(date(block_timestamp)) as first_deposit_day,
+    sum(amount) as deposit_volume
+       
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE (
+    to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+    and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+  )
+  OR (
+    to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+    and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+  )
+  GROUP BY 1 
+  HAVING first_deposit_day >= DATEADD(day, -30, CURRENT_DATE())
+), tab2 as (
+  SELECT
+    receiver,
+    block_timestamp
+  FROM AXELAR.DEFI.EZ_BRIDGE_SQUID
+  WHERE DESTINATION_CHAIN LIKE 'arbitrum'
+  AND receiver in (SELECT user1 from tab1)
+), tab3 as (
+  SELECT 
+    to_address,
+    block_timestamp as bt1
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE from_address in (
+    SELECT
+      DISTINCT address
+    FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.DIM_LABELS
+    WHERE label_type LIKE 'cex'
+  )
+  UNION all 
+  SELECT 
+    to_address,
+    block_timestamp as bt1 
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE from_address in (
+    SELECT
+      DISTINCT address
+    FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.DIM_LABELS
+    WHERE label_type LIKE 'cex'
+  )  
+), tab4 as (
+  SELECT 
+    to_address as ta,
+    block_timestamp as bt2
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_NATIVE_TRANSFERS
+  WHERE from_address in (
+    SELECT
+      DISTINCT address
+    FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.DIM_LABELS
+    WHERE label_type LIKE 'bridge'
+  )
+  UNION all 
+  SELECT 
+    to_address as ta,
+    block_timestamp as bt2 
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE from_address in (
+    SELECT
+      DISTINCT address
+    FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.DIM_LABELS
+    WHERE label_type LIKE 'bridge'
+  )  
+)
+SELECT
+  CASE 
+    when WALLET_TYPE3 > 0 then 'a/ Pre-Deposit Bridge'
+    when WALLET_TYPE2 > 0 then 'b/ Pre-Deposit Cex Transfer'
+    else 'c/ Other wallet' 
+  end as wallet_type,
+  count(*) as wallets,
+  avg(deposit_volume) as avg_user_deposit_volume,
+  median(deposit_volume) as median_user_deposit_volume 
+FROM (
+  SELECT
+    user1,
+    deposit_volume,
+    sum(CASE when ABS(DATEDIFF(hour, first_deposit_day, block_timestamp)) <= 24 then 1 else 0 end) as wallet_type1,
+    sum(CASE when ABS(DATEDIFF(hour, first_deposit_day, bt1)) <= 24 then 1 else 0 end) as wallet_type2,
+    sum(CASE when ABS(DATEDIFF(hour, first_deposit_day, bt2)) <= 24 then 1 else 0 end) as wallet_type3
+  FROM tab1
+    LEFT outer JOIN tab2 
+      on user1 = receiver
+    LEFT outer JOIN tab3 
+      on user1 = to_address
+    LEFT outer JOIN tab4
+      on user1 = ta
+  GROUP BY 1,2
+)
+GROUP BY 1
+    """
+
+    return pd.read_sql(query, conn)
+
+# --- Load Data --------------------------------------------------------------------------------------
+Depositors_by_Pre_Deposit_Activtry = load_Depositors_by_Pre_Deposit_Activtry(start_date, end_date)
+# ----------------------------------------------------------------------------------------------------
+bar_fig_avg = px.bar(
+    Depositors_by_Pre_Deposit_Activtry,
+    x="WALLET_TYPE",
+    y="AVG_USER_DEPOSIT_VOLUME",
+    title="Avg Deposit by Wallet Type",
+    color_discrete_sequence=["#03ad85"]
+)
+bar_fig_avg.update_layout(
+    xaxis_title="Wallet Type",
+    yaxis_title="$USD",
+    bargap=0.2
+)
+
+# ---------------------------------------
+bar_fig_median = px.bar(
+    Depositors_by_Pre_Deposit_Activtry,
+    x="WALLET_TYPE",
+    y="MEDIAN_USER_DEPOSIT_VOLUME",
+    title="Median Deposit by Wallet Type",
+    color_discrete_sequence=["#03ad85"]
+)
+bar_fig_median.update_layout(
+    xaxis_title="Wallet Type",
+    yaxis_title="$USD",
+    bargap=0.2
+)
+
+# ---------------------------------------
+color_scale = {
+    'Arbitrum User Wallet': '#97fce4',        
+    'Deposit Wallet': '#068f6e'
+}
+
+fig_donut_volume = px.pie(
+    Depositors_by_Pre_Deposit_Activtry,
+    names="WALLET_TYPE",
+    values="WALLETS",
+    title="Depositors by Arbitrum Use Group",
+    hole=0.5,
+    color="WALLET_TYPE",
+    color_discrete_map=color_scale
+)
+
+fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(Depositors_by_Pre_Deposit_Activtry))
+fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.plotly_chart(bar_fig_avg, use_container_width=True)
+with col2:
+    st.plotly_chart(bar_fig_median, use_container_width=True)    
+with col3:
+    st.plotly_chart(fig_donut_volume, use_container_width=True)
