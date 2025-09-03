@@ -639,3 +639,117 @@ fig1.update_layout(
     )
 )
 st.plotly_chart(fig1, use_container_width=True)
+
+st.markdown(
+    """
+    <div style="background-color:#c3c3c3; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Past 30 Day Depositor Metrics</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+# --- Row 7 ---------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_Depositors_by_Arbitrum_Use_Group(start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with tab1 as (
+  SELECT 
+    FROM_ADDRESS as user1,
+    MIN(date(block_timestamp)) as first_deposit_day,
+    sum(amount) as deposit_volume
+       
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE (
+    to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+    and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+  )
+  OR (
+    to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+    and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+  )
+  GROUP BY 1 
+  HAVING first_deposit_day >= DATEADD(day, -30, CURRENT_DATE())
+), tab2 as (
+  SELECT
+    FROM_address as user2,
+    min(block_timestamp) as first_arb_transaction
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.FACT_TRANSACTIONS
+  WHERE from_address in (SELECT user1 from tab1)
+  GROUP BY 1 
+)
+SELECT 
+  CASE when ABS(DATEDIFF(hour, first_arb_transaction, first_deposit_day)) <= 24 
+       then 'Deposit Wallet' 
+       else 'Arbitrum User Wallet' 
+  end as wallet_type,
+  count(*) as wallets,
+  avg(deposit_volume) as avg_user_deposit_volume,
+  median(deposit_volume) as median_user_deposit_volume
+FROM tab1
+  LEFT outer JOIN tab2 
+    on user1 = user2 
+GROUP BY 1 
+    """
+
+    return pd.read_sql(query, conn)
+
+# --- Load Data --------------------------------------------------------------------------------------
+Depositors_by_Arbitrum_Use_Group = load_Depositors_by_Arbitrum_Use_Group(start_date, end_date)
+# ----------------------------------------------------------------------------------------------------
+bar_fig = px.bar(
+    Depositors_by_Arbitrum_Use_Group,
+    x="WALLET_TYPE",
+    y="AVG_USER_DEPOSIT_VOLUME",
+    title="Avg Deposit by Wallet Type",
+    color_discrete_sequence=["#03ad85"]
+)
+bar_fig.update_layout(
+    xaxis_title="Wallet Type",
+    yaxis_title="$USD",
+    bargap=0.2
+)
+
+# ---------------------------------------
+bar_fig = px.bar(
+    Depositors_by_Arbitrum_Use_Group,
+    x="WALLET_TYPE",
+    y="MEDIAN_USER_DEPOSIT_VOLUME",
+    title="Median Deposit by Wallet Type",
+    color_discrete_sequence=["#03ad85"]
+)
+bar_fig.update_layout(
+    xaxis_title="Wallet Type",
+    yaxis_title="$USD",
+    bargap=0.2
+)
+
+# ---------------------------------------
+color_scale = {
+    'Arbitrum User Wallet': '#97fce4',        
+    'Deposit Wallet': '#068f6e'
+}
+
+fig_donut_volume = px.pie(
+    Depositors_by_Arbitrum_Use_Group,
+    names="WALLET_TYPE",
+    values="WALLETS",
+    title="Depositors by Arbitrum Use Group",
+    hole=0.5,
+    color="WALLET_TYPE",
+    color_discrete_map=color_scale
+)
+
+fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(Depositors_by_Arbitrum_Use_Group))
+fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(bar_fig, use_container_width=True)
+with col2:
+    st.plotly_chart(bar_fig, use_container_width=True)    
+with col3:
+    st.plotly_chart(fig_donut_volume, use_container_width=True)
