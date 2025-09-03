@@ -192,6 +192,7 @@ with col1:
     )
     fig_stacked.update_layout(
         barmode="stack",
+        xaxis_title="",
         yaxis_title="USD",
         legend=dict(
             orientation="h", 
