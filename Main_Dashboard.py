@@ -892,8 +892,9 @@ bar_fig_median.update_layout(
 
 # ---------------------------------------
 color_scale = {
-    'Arbitrum User Wallet': '#97fce4',        
-    'Deposit Wallet': '#068f6e'
+    'a/ Pre-Deposit Bridge': '#97fce4',        
+    'b/ Pre-Deposit Cex Transfer': '#068f6e',
+    'c/ Other wallet': '#00eeb5'
 }
 
 fig_donut_volume = px.pie(
