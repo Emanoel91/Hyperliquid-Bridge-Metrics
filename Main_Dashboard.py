@@ -610,7 +610,7 @@ fig1 = go.Figure()
 fig1.add_trace(go.Bar(
     x=new_depositors_over_time["DAY"], 
     y=new_depositors_over_time["NEW_DEPOSITORS"], 
-    name="NEW_DEPOSITORS", 
+    name="New Depositors", 
     yaxis="y1",
     marker_color="#8ef1d9"
 ))
