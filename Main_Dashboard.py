@@ -70,18 +70,6 @@ conn = snowflake.connector.connect(
     schema=schema
 )
 
-# --- Date Inputs -------------------------------------------------------
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    timeframe = st.selectbox("Select Time Frame", ["week", "month", "day"])
-
-with col2:
-    start_date = st.date_input("Start Date", value=pd.to_datetime("2023-02-26"))
-
-with col3:
-    end_date = st.date_input("End Date", value=pd.to_datetime("2025-08-31"))
-
 st.markdown(
     """
     <div style="background-color:#c3c3c3; padding:1px; border-radius:10px;">
@@ -93,10 +81,8 @@ st.markdown(
 
 # --- Row 1 ---------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_hyperliquid_data_over_time(timeframe, start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-
+def load_hyperliquid_data_over_time():
+    
     query = f"""
     with tab1 as (
 SELECT 
@@ -178,7 +164,7 @@ from tab1
     return pd.read_sql(query, conn)
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-hyperliquid_data_over_time = load_hyperliquid_data_over_time(timeframe, start_date, end_date)
+hyperliquid_data_over_time = load_hyperliquid_data_over_time()
 # --- Row 2 charts -------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 
@@ -253,9 +239,7 @@ st.markdown(
 
 # --- Row 2 ---------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_hyperliquid_bridge_data(timeframe, start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_hyperliquid_bridge_data():
 
     query = f"""
     SELECT
@@ -311,7 +295,7 @@ GROUP BY 1,2
     return pd.read_sql(query, conn)
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-hyperliquid_bridge_data = load_hyperliquid_bridge_data(timeframe, start_date, end_date)
+hyperliquid_bridge_data = load_hyperliquid_bridge_data()
 # --- Row 2 charts -------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 
@@ -394,10 +378,7 @@ with col3:
 
 # --- Row 3 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_hyperliquid_stats(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_hyperliquid_stats():
 
     query = f"""
     SELECT 
@@ -420,7 +401,7 @@ OR (
     return df
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-df_hyperliquid_stats = load_hyperliquid_stats(start_date, end_date)
+df_hyperliquid_stats = load_hyperliquid_stats()
 # --- KPI Row ------------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 
@@ -441,9 +422,7 @@ col3.metric(
 
 # --- Row 4 --------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_deposit_distribution(start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_deposit_distribution():
 
     query = f"""
     SELECT 
@@ -469,7 +448,7 @@ GROUP BY 1
     return pd.read_sql(query, conn)
 
 # --- Load Data --------------------------------------------------------------------------------------
-deposit_distribution = load_deposit_distribution(start_date, end_date)
+deposit_distribution = load_deposit_distribution()
 # ----------------------------------------------------------------------------------------------------
 bar_fig = px.bar(
     deposit_distribution,
@@ -525,10 +504,7 @@ st.markdown(
 
 # --- Row 5 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_total_hyperliquid_stats(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_total_hyperliquid_stats():
 
     query = f"""
     with overview as (
@@ -566,7 +542,7 @@ from overview
     return df
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-total_hyperliquid_stats = load_total_hyperliquid_stats(start_date, end_date)
+total_hyperliquid_stats = load_total_hyperliquid_stats()
 # --- KPI Row ------------------------------------------------------------------------------------------------------
 col1 = st.columns(1)[0]
 
@@ -576,9 +552,7 @@ col1.metric(
 )
 # --- Row 6 ---------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_new_depositors_over_time(timeframe, start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_new_depositors_over_time():
 
     query = f"""
     SELECT
@@ -610,7 +584,7 @@ ORDER by day DESC
     return pd.read_sql(query, conn)
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-new_depositors_over_time = load_new_depositors_over_time(timeframe, start_date, end_date)
+new_depositors_over_time = load_new_depositors_over_time()
 # --- Row 3 --------------------------------------------------------------------------------------------------------
 
 fig1 = go.Figure()
@@ -658,9 +632,7 @@ st.markdown(
 )
 # --- Row 7 ---------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_Depositors_by_Arbitrum_Use_Group(start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_Depositors_by_Arbitrum_Use_Group():
 
     query = f"""
     with tab1 as (
@@ -705,7 +677,7 @@ GROUP BY 1
     return pd.read_sql(query, conn)
 
 # --- Load Data --------------------------------------------------------------------------------------
-Depositors_by_Arbitrum_Use_Group = load_Depositors_by_Arbitrum_Use_Group(start_date, end_date)
+Depositors_by_Arbitrum_Use_Group = load_Depositors_by_Arbitrum_Use_Group()
 # ----------------------------------------------------------------------------------------------------
 bar_fig_avg = px.bar(
     Depositors_by_Arbitrum_Use_Group,
@@ -764,9 +736,7 @@ with col3:
 
 # --- Row 8 ---------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_Depositors_by_Pre_Deposit_Activtry(start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+def load_Depositors_by_Pre_Deposit_Activtry():
 
     query = f"""
     with tab1 as (
@@ -869,7 +839,7 @@ GROUP BY 1
     return pd.read_sql(query, conn)
 
 # --- Load Data --------------------------------------------------------------------------------------
-Depositors_by_Pre_Deposit_Activtry = load_Depositors_by_Pre_Deposit_Activtry(start_date, end_date)
+Depositors_by_Pre_Deposit_Activtry = load_Depositors_by_Pre_Deposit_Activtry()
 # ----------------------------------------------------------------------------------------------------
 bar_fig_avg = px.bar(
     Depositors_by_Pre_Deposit_Activtry,
