@@ -431,3 +431,77 @@ col3.metric(
     value=f"{df_hyperliquid_stats["Total Deposits"][0]:,} Txns"
 )
 
+# --- Row 4 --------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_deposit_distribution(start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    SELECT 
+  CASE when amount < 100 then 'a/ below $100'
+  when amount < 1000 then 'b/ $100 - $1K'
+  when amount < 10000 then 'c/ $1K - $10K'
+  when amount < 100000 then 'd/ $10K - $100K'
+  else 'f/ S100K+' end as deposit_size,
+  count(*) as deposits
+     
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (
+  to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+  and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+)
+OR (
+  to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+  and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+)
+GROUP BY 1 
+    """
+
+    return pd.read_sql(query, conn)
+
+# --- Load Data --------------------------------------------------------------------------------------
+deposit_distribution = load_deposit_distribution(start_date, end_date)
+# ----------------------------------------------------------------------------------------------------
+bar_fig = px.bar(
+    deposit_distribution,
+    x="DEPOSIT_SIZE",
+    y="DEPOSITS",
+    title="Breakdown of Deposits by Size",
+    color_discrete_sequence=["#97fce4"]
+)
+bar_fig.update_layout(
+    xaxis_title="Deposit Size",
+    yaxis_title="Txns count",
+    bargap=0.2
+)
+
+# ---------------------------------------
+color_scale = {
+    'a/ below $100': '#97fce4',        
+    'b/ $100 - $1K': '#4ee4c1',
+    'c/ $1K - $10K': '#1bba94',
+    'd/ $10K - $100K': '#069a77',
+    'e/ S100K+': '#017459'
+}
+
+fig_donut_volume = px.pie(
+    deposit_distribution,
+    names="DEPOSIT_SIZE",
+    values="DEPOSITS",
+    title="Share of Deposits by Size",
+    hole=0.5,
+    color="DEPOSIT_SIZE",
+    color_discrete_map=color_scale
+)
+
+fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(deposit_distribution))
+fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(bar_fig, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_donut_volume, use_container_width=True)
