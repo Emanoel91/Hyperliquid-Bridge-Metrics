@@ -194,12 +194,13 @@ with col1:
         barmode="stack",
         yaxis_title="USD",
         legend=dict(
-            orientation="h",  # افقی کردن legend
+            orientation="h", 
             yanchor="bottom",
             y=1.02,
             xanchor="center",
             x=0.5
-        )
+        ),
+        legend_title_text=""  
     )
     st.plotly_chart(fig_stacked, use_container_width=True)
 
