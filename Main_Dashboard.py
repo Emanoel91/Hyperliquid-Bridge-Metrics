@@ -40,15 +40,15 @@ st.markdown(
 st.markdown(
     """
     <div style="background-color: #cff1e4; padding: 15px; border-radius: 10px; border: 1px solid #cff1e4;">
-        <b>Introduction</b><br>
+        <b>📋Introduction</b><br>
         Hyperliquid operates as an <b>on-chain order book perpetual futures DEX</b>, mirroring centralized exchange functionalities but with distinct <b>on-chain transparency</b>. 
         It runs on the <b>Hyperliquid L1 blockchain</b>, designed for high performance with <b>sub-second block latency</b> and a capacity of <b>20,000 orders per second</b>. 
         The <b>Hyperliquid On-Chain Analytics Dashboard</b> is a specialized tool for analyzing bridge activities between the <b>Hyperliquid L1</b> and <b>Arbitrum Ethereum Layer 2</b>.
         <br><br>
-        <b>Key Features</b><br>
-        <b>Deposit Flow Analysis:</b> Provides data on deposit volumes and frequencies into Hyperliquid L1.<br><br>
-        <b>Withdrawal Tracking:</b> Offers insights into the liquidity extraction patterns from Hyperliquid L1.<br><br>
-        <b>Depositor Demographics:</b> Detailed demographic and behavioral data on users transferring funds to Hyperliquid L1.
+        <b>🔑Key Features</b><br>
+        <b>🔹Deposit Flow Analysis:</b> Provides data on deposit volumes and frequencies into Hyperliquid L1.<br><br>
+        <b>🔹Withdrawal Tracking:</b> Offers insights into the liquidity extraction patterns from Hyperliquid L1.<br><br>
+        <b>🔹Depositor Demographics:</b> Detailed demographic and behavioral data on users transferring funds to Hyperliquid L1.
     </div>
     """,
     unsafe_allow_html=True
