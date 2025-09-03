@@ -560,9 +560,9 @@ from overview
 # --- Load Data ----------------------------------------------------------------------------------------------------
 total_hyperliquid_stats = load_total_hyperliquid_stats(start_date, end_date)
 # --- KPI Row ------------------------------------------------------------------------------------------------------
-col1 = st.columns(1)
+col1 = st.columns(1)[0]
 
 col1.metric(
     label="Total Hyperliquid Depositors",
-    value=f"💼{df_hyperliquid_stats["TOTAL_DEPOSITORS"][0]:,} Wallets"
+    value=f"💼{total_hyperliquid_stats['TOTAL_DEPOSITORS'][0]:,} Wallets"
 )
