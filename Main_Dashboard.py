@@ -190,7 +190,7 @@ with col1:
     color="TOKEN",
     title="Daily Hyperliquid TVL by Token"
     )
-    fig_stacked.update_layout(barmode="stack", yaxis_title="USD")
+    fig_stacked.update_layout(barmode="stack", yaxis_title="USD"legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
     st.plotly_chart(fig_stacked, use_container_width=True)
 
 with col2:
