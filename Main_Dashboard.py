@@ -618,7 +618,7 @@ fig1.add_trace(go.Bar(
 fig1.add_trace(go.Scatter(
     x=new_depositors_over_time["DAY"], 
     y=new_depositors_over_time["TOTAL_DEPOSITORS"], 
-    name="TOTAL_DEPOSITORS", 
+    name="Total Depositors", 
     mode="lines", 
     yaxis="y2",
     line=dict(color="#0c8669")
