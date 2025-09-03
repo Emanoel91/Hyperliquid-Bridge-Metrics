@@ -868,7 +868,7 @@ bar_fig_avg = px.bar(
     x="WALLET_TYPE",
     y="AVG_USER_DEPOSIT_VOLUME",
     title="Avg Deposit by Wallet Type",
-    color_discrete_sequence=["#03ad85"]
+    color_discrete_sequence=["#97fce4"]
 )
 bar_fig_avg.update_layout(
     xaxis_title="Wallet Type",
@@ -882,7 +882,7 @@ bar_fig_median = px.bar(
     x="WALLET_TYPE",
     y="MEDIAN_USER_DEPOSIT_VOLUME",
     title="Median Deposit by Wallet Type",
-    color_discrete_sequence=["#03ad85"]
+    color_discrete_sequence=["#97fce4"]
 )
 bar_fig_median.update_layout(
     xaxis_title="Wallet Type",
