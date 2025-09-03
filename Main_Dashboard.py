@@ -93,104 +93,139 @@ st.markdown(
 
 # --- Row 1 ---------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_time_series_data(timeframe, start_date, end_date):
+def load_hyperliquid_data_over_time(timeframe, start_date, end_date):
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
     query = f"""
-    WITH overview as (
-WITH axelar_gmp AS (
+    with tab1 as (
+SELECT 
+  date(block_timestamp) as day,
+  'USDC.e' as token,
+  sum(
+    CASE 
+      when TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then amount
+      when FROM_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then -1 * amount
+    END
+  ) as net_deposit,
+  sum(net_deposit) over (ORDER by day) as TVL
   
-  SELECT  
-    created_at,
-    LOWER(data:call.chain::STRING) AS source_chain,
-    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
-    data:call.transaction.from::STRING AS user,
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+OR FROM_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4'))
+AND contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+GROUP BY 1 
 
+UNION all 
+
+SELECT 
+  date(block_timestamp) as day,
+  'USDC' as token,
+  sum(
     CASE 
-      WHEN IS_ARRAY(data:amount) OR IS_OBJECT(data:amount) THEN NULL
-      WHEN TRY_TO_DOUBLE(data:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:amount::STRING)
-      ELSE NULL
-    END AS amount,
+      when TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then amount
+      when FROM_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then -1 * amount
+    END
+  ) as net_deposit,
+  sum(net_deposit) over (ORDER by day) as TVL
+  
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+OR FROM_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7'))
+AND contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+GROUP BY 1,2
+), tab2 as ( 
+SELECT
+  date as d1,
+  sum(supply) as stablecoin_suppy
+ 
+FROM (
+SELECT
+  date,
+  symbol,
+  sum(case when type like 'mint' then amount when type like 'burn' then -amount else 0 end) as net_mint,
+  sum(net_mint) over (partition by symbol order by date) as supply
 
-    CASE 
-      WHEN IS_ARRAY(data:value) OR IS_OBJECT(data:value) THEN NULL
-      WHEN TRY_TO_DOUBLE(data:value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:value::STRING)
-      ELSE NULL
-    END AS amount_usd,
+from (
+  SELECT
+    date(block_timestamp) date,
+    case when from_address like '0x0000000000000000000000000000000000000000' then 'mint'
+    when to_address like '0x0000000000000000000000000000000000000000' then 'burn' else 'otehr' end as type,
+    SYMBOL,
+    amount 
+  
+  from ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  where contract_address in (
+    lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831'),
+    lower('0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'),
+    lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'),
+    lower('0xda10009cbd5d07dd0cecc66161fc93d7c9000da1')
+  )
+)
+GROUP BY 1,2)
+GROUP by 1)
+SELECT 
+  *,
+  100 * (tvl/stablecoin_suppy) as percent_of_sablecoins_in_hyperliquid
 
-    COALESCE(
-      CASE 
-        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
-          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
-        THEN NULL
-        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
-          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
-        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
-        ELSE NULL
-      END,
-      CASE 
-        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
-        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
-        ELSE NULL
-      END
-    ) AS fee,
+from tab1
+  left outer join tab2
+    on d1 = day
+    order by day 
 
-    id, 
-    'GMP' AS "Service", 
-    data:symbol::STRING AS raw_asset
-
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed'
-    AND simplified_status = 'received'
-    )
-
-SELECT created_at, id, user, source_chain, destination_chain,
-     "Service", amount, amount_usd, fee
-
-FROM axelar_gmp)
-
-select 
-date_trunc('{timeframe}',created_at) as "Date",
-count(distinct id) as "Total Transactions",
-count(distinct user) as "Unique Users",
-round(sum(amount_usd)) as "Total Volume"
-from overview
-where created_at::date>='{start_str}' and created_at::date<='{end_str}'
-group by 1
-order by 1
     """
 
     return pd.read_sql(query, conn)
 
 # --- Load Data ----------------------------------------------------------------------------------------------------
-df_ts = load_time_series_data(timeframe, start_date, end_date)
+hyperliquid_data_over_time = load_hyperliquid_data_over_time(timeframe, start_date, end_date)
 # --- Row 2 charts -------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    fig1 = px.area(df_ts, x="Date", y="Total Volume", title="Volume Over Time ($USD)")
-    fig1.update_layout(
-        xaxis_title=" ",
-        yaxis_title="$USD",
-        template="plotly_white"
+    fig_stacked = px.bar(
+    hyperliquid_data_over_time,
+    x="DAY",
+    y="TVL",
+    color="TOKEN",
+    title="Daily Hyperliquid TVL by Token"
     )
-    st.plotly_chart(fig1, use_container_width=True)
+    fig_stacked.update_layout(barmode="stack", yaxis_title="USD")
+    st.plotly_chart(fig_stacked, use_container_width=True)
 
 with col2:
-    fig2 = px.area(df_ts, x="Date", y="Total Volume", title="Volume Over Time ($USD)")
-    fig2.update_layout(
-        xaxis_title=" ",
-        yaxis_title="$USD",
-        template="plotly_white"
+    fig2 = px.bar(
+        hyperliquid_data_over_time,
+        x="DAY",
+        y="NET_DEPOSIT",
+        title="Daily Hyperliquid Net Deposits",
+        color_discrete_sequence=["#e2fb43"]
     )
+    fig2.update_layout(xaxis_title="", yaxis_title="USD", bargap=0.2)
     st.plotly_chart(fig2, use_container_width=True)
 
 with col3:
-    fig3 = px.area(df_ts, x="Date", y="Total Volume", title="Volume Over Time ($USD)")
+    fig3 = go.Figure()
+    fig3.add_trace(
+        go.Scatter(
+            x=hyperliquid_data_over_time["DAY"],
+            y=hyperliquid_data_over_time["PERCENT_OF_SABLECOINS_IN_HYPERLIQUID"],
+            name="PERCENT_OF_SABLECOINS_IN_HYPERLIQUID",
+            mode="lines",
+            yaxis="y1"
+        )
+    )
+    
     fig3.update_layout(
-        xaxis_title=" ",
-        yaxis_title="$USD",
-        template="plotly_white"
+        title="Daily Percent of Arbitrum Stablecoins in Hyperliquid",
+        yaxis=dict(title="%"),
+        xaxis=dict(title=" "),
+        legend=dict(
+            orientation="h",   
+            yanchor="bottom", 
+            y=1.05,           
+            xanchor="center",  
+            x=0.5
+        )
     )
     st.plotly_chart(fig3, use_container_width=True)
