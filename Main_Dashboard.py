@@ -745,7 +745,7 @@ fig_donut_volume = px.pie(
 fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(Depositors_by_Arbitrum_Use_Group))
 fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.plotly_chart(bar_fig_avg, use_container_width=True)
