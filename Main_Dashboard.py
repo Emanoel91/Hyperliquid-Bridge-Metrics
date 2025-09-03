@@ -505,3 +505,64 @@ with col1:
 
 with col2:
     st.plotly_chart(fig_donut_volume, use_container_width=True)
+
+st.markdown(
+    """
+    <div style="background-color:#c3c3c3; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Depositor Metrics</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Row 5 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_total_hyperliquid_stats(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with overview as (
+SELECT
+  day,
+  count(*) as new_depositors,
+  sum(new_depositors) over (ORDER by day) as total_depositors 
+
+FROM (
+  SELECT 
+    FROM_ADDRESS,
+    MIN(date(block_timestamp)) as day
+     
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE (
+    to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+    and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+  )
+  OR (
+    to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+    and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+  )
+  GROUP BY 1 
+)
+GROUP BY 1 
+ORDER by day DESC
+limit 1)
+
+select TOTAL_DEPOSITORS
+from overview
+
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data ----------------------------------------------------------------------------------------------------
+total_hyperliquid_stats = load_total_hyperliquid_stats(start_date, end_date)
+# --- KPI Row ------------------------------------------------------------------------------------------------------
+col1 = st.columns(1)
+
+col1.metric(
+    label="Total Hyperliquid Depositors",
+    value=f"💼{df_hyperliquid_stats["TOTAL_DEPOSITORS"][0]:,} Wallets"
+)
