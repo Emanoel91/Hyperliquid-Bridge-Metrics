@@ -135,7 +135,6 @@ FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
 WHERE (TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
 OR FROM_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7'))
 AND contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831') 
-AND block_timestamp::date>='2024-01-01'
 GROUP BY 1,2
 ), tab2 as ( 
 SELECT
@@ -174,6 +173,7 @@ SELECT
 from tab1
   left outer join tab2
     on d1 = day
+    where day>='2024-01-01'
     order by day 
 
     """
