@@ -699,28 +699,28 @@ GROUP BY 1
 # --- Load Data --------------------------------------------------------------------------------------
 Depositors_by_Arbitrum_Use_Group = load_Depositors_by_Arbitrum_Use_Group(start_date, end_date)
 # ----------------------------------------------------------------------------------------------------
-bar_fig = px.bar(
+bar_fig_avg = px.bar(
     Depositors_by_Arbitrum_Use_Group,
     x="WALLET_TYPE",
     y="AVG_USER_DEPOSIT_VOLUME",
     title="Avg Deposit by Wallet Type",
     color_discrete_sequence=["#03ad85"]
 )
-bar_fig.update_layout(
+bar_fig_avg.update_layout(
     xaxis_title="Wallet Type",
     yaxis_title="$USD",
     bargap=0.2
 )
 
 # ---------------------------------------
-bar_fig = px.bar(
+bar_fig_median = px.bar(
     Depositors_by_Arbitrum_Use_Group,
     x="WALLET_TYPE",
     y="MEDIAN_USER_DEPOSIT_VOLUME",
     title="Median Deposit by Wallet Type",
     color_discrete_sequence=["#03ad85"]
 )
-bar_fig.update_layout(
+bar_fig_median.update_layout(
     xaxis_title="Wallet Type",
     yaxis_title="$USD",
     bargap=0.2
@@ -748,8 +748,8 @@ fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0
 col1, col2 = st.columns(2)
 
 with col1:
-    st.plotly_chart(bar_fig, use_container_width=True)
+    st.plotly_chart(bar_fig_avg, use_container_width=True)
 with col2:
-    st.plotly_chart(bar_fig, use_container_width=True)    
+    st.plotly_chart(bar_fig_median, use_container_width=True)    
 with col3:
     st.plotly_chart(fig_donut_volume, use_container_width=True)
