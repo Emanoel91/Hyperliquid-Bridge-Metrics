@@ -37,8 +37,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
-
 st.markdown(
     """
     <div style="background-color: #cff1e4; padding: 15px; border-radius: 10px; border: 1px solid #cff1e4;">
@@ -56,6 +54,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
 # --- Snowflake Connection ----------------------------------------------------------------------------------------
 snowflake_secrets = st.secrets["snowflake"]
