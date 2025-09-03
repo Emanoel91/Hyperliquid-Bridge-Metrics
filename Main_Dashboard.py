@@ -250,3 +250,136 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# --- Row 2 ---------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_hyperliquid_bridge_data(timeframe, start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    SELECT
+  date_trunc('week', day) as week,
+  action_type,
+  count(DISTINCT user) as users,
+  count(DISTINCT tx_hash) as events,
+  sum(amount) as volume
+
+FROM (
+SELECT 
+  date(block_timestamp) as day,
+  CASE 
+      when TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then 'Deposit'
+      when FROM_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then 'Withdrawl'
+  END as action_type,
+  tx_hash,
+  CASE 
+      when TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then from_address
+      when FROM_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then to_address
+  END as user,
+  amount  
+  
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+OR FROM_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4'))
+AND contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+
+UNION all 
+
+SELECT 
+  date(block_timestamp) as day,
+  CASE 
+      when TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then 'Deposit'
+      when FROM_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then 'Withdrawl'
+  END as action_type,
+  tx_hash,
+  CASE 
+      when TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then from_address
+      when FROM_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then to_address
+  END as user,
+  amount  
+  
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+OR FROM_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7'))
+AND contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+)
+GROUP BY 1,2 
+
+    """
+
+    return pd.read_sql(query, conn)
+
+# --- Load Data ----------------------------------------------------------------------------------------------------
+hyperliquid_bridge_data = load_hyperliquid_bridge_data(timeframe, start_date, end_date)
+# --- Row 2 charts -------------------------------------------------------------------------------------------------
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    fig_stacked = px.bar(
+        hyperliquid_bridge_data,
+        x="WEEK",
+        y="VOLUME",
+        color="ACTION_TYPE",
+        title="Weekly Bridge Volume by Action Type"
+    )
+    fig_stacked.update_layout(
+        barmode="stack",
+        xaxis_title="",
+        yaxis_title="USD",
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5
+        ),
+        legend_title_text=""  
+    )
+    st.plotly_chart(fig_stacked, use_container_width=True)
+
+with col2:
+    fig_stacked = px.bar(
+        hyperliquid_bridge_data,
+        x="WEEK",
+        y="USERS",
+        color="ACTION_TYPE",
+        title="Weekly Bridge Users by Action Type"
+    )
+    fig_stacked.update_layout(
+        barmode="stack",
+        xaxis_title="",
+        yaxis_title="Wallet count",
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5
+        ),
+        legend_title_text=""  
+    )
+    st.plotly_chart(fig_stacked, use_container_width=True)
+
+with col3:
+    fig_stacked = px.bar(
+        hyperliquid_bridge_data,
+        x="WEEK",
+        y="EVENTS",
+        color="ACTION_TYPE",
+        title="Weekly Bridge Events by Action Type"
+    )
+    fig_stacked.update_layout(
+        barmode="stack",
+        xaxis_title="",
+        yaxis_title="Txns count",
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5
+        ),
+        legend_title_text=""  
+    )
+    st.plotly_chart(fig_stacked, use_container_width=True)
