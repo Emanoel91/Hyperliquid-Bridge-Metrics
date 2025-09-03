@@ -417,17 +417,17 @@ df_hyperliquid_stats = load_hyperliquid_stats(start_date, end_date)
 col1, col2, col3 = st.columns(3)
 
 col1.metric(
-    label="Number of Sources",
+    label="Avg Deposit Size (USD)",
     value=f"${df_hyperliquid_stats["Avg Deposit Size USD"][0]:,} "
 )
 
 col2.metric(
-    label="Number of Destinations",
+    label="Median Deposit Size (USD)",
     value=f"${df_hyperliquid_stats["Median Deposit Size USD"][0]:,} "
 )
 
 col3.metric(
-    label="Average Volume",
+    label="Total Deposits",
     value=f"{df_hyperliquid_stats["Total Deposits"][0]:,} Txns"
 )
 
