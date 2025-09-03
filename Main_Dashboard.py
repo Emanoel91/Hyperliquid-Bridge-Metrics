@@ -229,3 +229,12 @@ with col3:
         )
     )
     st.plotly_chart(fig3, use_container_width=True)
+
+st.markdown(
+    """
+    <div style="background-color:#c3c3c3; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Bridge Deposits/Withdraws</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
