@@ -443,7 +443,7 @@ def load_deposit_distribution(start_date, end_date):
   when amount < 1000 then 'b/ $100 - $1K'
   when amount < 10000 then 'c/ $1K - $10K'
   when amount < 100000 then 'd/ $10K - $100K'
-  else 'f/ S100K+' end as deposit_size,
+  else 'e/ S100K+' end as deposit_size,
   count(*) as deposits
      
 FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
