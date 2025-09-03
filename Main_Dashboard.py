@@ -270,7 +270,7 @@ SELECT
   date(block_timestamp) as day,
   CASE 
       when TO_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then 'Deposit'
-      when FROM_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then 'Withdrawl'
+      when FROM_ADDRESS LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4') then 'Withdraw'
   END as action_type,
   tx_hash,
   CASE 
@@ -290,7 +290,7 @@ SELECT
   date(block_timestamp) as day,
   CASE 
       when TO_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then 'Deposit'
-      when FROM_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then 'Withdrawl'
+      when FROM_ADDRESS LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7') then 'Withdraw'
   END as action_type,
   tx_hash,
   CASE 
@@ -315,12 +315,18 @@ hyperliquid_bridge_data = load_hyperliquid_bridge_data(timeframe, start_date, en
 # --- Row 2 charts -------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 
+color_map = {
+    "Deposit": "#84fcd7",  
+    "Withdraw": "#3c876e"
+}
+
 with col1:
     fig_stacked = px.bar(
         hyperliquid_bridge_data,
         x="WEEK",
         y="VOLUME",
         color="ACTION_TYPE",
+        color_discrete_map=color_map,
         title="Weekly Bridge Volume by Action Type"
     )
     fig_stacked.update_layout(
@@ -344,6 +350,7 @@ with col2:
         x="WEEK",
         y="USERS",
         color="ACTION_TYPE",
+        color_discrete_map=color_map,
         title="Weekly Bridge Users by Action Type"
     )
     fig_stacked.update_layout(
@@ -367,6 +374,7 @@ with col3:
         x="WEEK",
         y="EVENTS",
         color="ACTION_TYPE",
+        color_discrete_map=color_map,
         title="Weekly Bridge Events by Action Type"
     )
     fig_stacked.update_layout(
