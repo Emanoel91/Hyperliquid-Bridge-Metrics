@@ -383,3 +383,51 @@ with col3:
         legend_title_text=""  
     )
     st.plotly_chart(fig_stacked, use_container_width=True)
+
+# --- Row 3 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_hyperliquid_stats(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    SELECT 
+  round(avg(amount)) as "Avg Deposit Size USD",
+  round(median(amount)) as "Median Deposit Size USD",
+  count(*) as "Total Deposits"
+     
+FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+WHERE (
+  to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+  and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+)
+OR (
+  to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+  and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+)
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data ----------------------------------------------------------------------------------------------------
+df_hyperliquid_stats = load_hyperliquid_stats(start_date, end_date)
+# --- KPI Row ------------------------------------------------------------------------------------------------------
+col1, col2, col3 = st.columns(3)
+
+col1.metric(
+    label="Number of Sources",
+    value=f"${df_hyperliquid_stats["Avg Deposit Size USD"][0]:,} "
+)
+
+col2.metric(
+    label="Number of Destinations",
+    value=f"${df_hyperliquid_stats["Median Deposit Size USD"][0]:,} "
+)
+
+col3.metric(
+    label="Average Volume",
+    value=f"{df_hyperliquid_stats["Total Deposits"][0]:,} Txns"
+)
+
