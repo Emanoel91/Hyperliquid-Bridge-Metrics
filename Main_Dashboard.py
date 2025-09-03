@@ -173,7 +173,6 @@ SELECT
 from tab1
   left outer join tab2
     on d1 = day
-    where day>='2024-01-01'
     order by day 
 
     """
