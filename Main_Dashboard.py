@@ -566,3 +566,76 @@ col1.metric(
     label="Total Hyperliquid Depositors",
     value=f"💼{total_hyperliquid_stats['TOTAL_DEPOSITORS'][0]:,} Wallets"
 )
+# --- Row 6 ---------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_new_depositors_over_time(timeframe, start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    SELECT
+  day,
+  count(*) as new_depositors,
+  sum(new_depositors) over (ORDER by day) as total_depositors 
+
+FROM (
+  SELECT 
+    FROM_ADDRESS,
+    MIN(date(block_timestamp)) as day
+     
+  FROM ARBITRUM_ONCHAIN_CORE_DATA.CORE.EZ_TOKEN_TRANSFERS
+  WHERE (
+    to_address LIKE lower('0xC67E9Efdb8a66A4B91b1f3731C75F500130373A4')
+    and contract_address LIKE lower('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
+  )
+  OR (
+    to_address LIKE lower('0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7')
+    and contract_address LIKE lower('0xaf88d065e77c8cC2239327C5EDb3A432268e5831')
+  )
+  GROUP BY 1 
+)
+GROUP BY 1 
+ORDER by day DESC
+
+    """
+
+    return pd.read_sql(query, conn)
+
+# --- Load Data ----------------------------------------------------------------------------------------------------
+new_depositors_over_time = load_new_depositors_over_time(timeframe, start_date, end_date)
+# --- Row 3 --------------------------------------------------------------------------------------------------------
+
+fig1 = go.Figure()
+
+fig1.add_trace(go.Bar(
+    x=new_depositors_over_time["DAY"], 
+    y=new_depositors_over_time["NEW_DEPOSITORS"], 
+    name="NEW_DEPOSITORS", 
+    yaxis="y1",
+    marker_color="blue"
+))
+
+fig1.add_trace(go.Scatter(
+    x=new_depositors_over_time["DAY"], 
+    y=new_depositors_over_time["TOTAL_DEPOSITORS"], 
+    name="TOTAL_DEPOSITORS", 
+    mode="lines", 
+    yaxis="y2",
+    line=dict(color="red")
+))
+
+fig1.update_layout(
+    title="Daily New and Total Hyperliquid Depositors",
+    yaxis=dict(title="Wallet count"),  
+    yaxis2=dict(title="Wallet count", overlaying="y", side="right"),  
+    xaxis=dict(title=" "),
+    barmode="group",
+    legend=dict(
+        orientation="h",   
+        yanchor="bottom", 
+        y=1.05,           
+        xanchor="center",  
+        x=0.5
+    )
+)
+st.plotly_chart(fig1, use_container_width=True)
