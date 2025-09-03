@@ -621,7 +621,7 @@ fig1.add_trace(go.Scatter(
     name="TOTAL_DEPOSITORS", 
     mode="lines", 
     yaxis="y2",
-    line=dict(color="red")
+    line=dict(color="#0c8669")
 ))
 
 fig1.update_layout(
